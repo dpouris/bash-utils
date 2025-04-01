@@ -9,6 +9,7 @@
 
 with_filename=1
 with_color=1
+preview_whole=0
 
 if [ $# = 0 ]; then
   echo "Usage: $(basename $0) <dirname> [...--optional-parameters]"
@@ -32,6 +33,15 @@ for param in $@; do
 done
 
 for file in $(/bin/ls -p $dir | grep -v /); do
+  trunc=0
+  file_len=$(($(wc -l "$dir"/"$file" | cut -c 7-8 | cut -d " " -f 2) + 1 - 1))
+  if [[ $file_len -lt 10 ]]; then
+    preview_whole=1
+  else
+    trunc=$(($file_len - 10))
+    preview_whole=0
+  fi
+
   if [ $with_filename = 1 ]; then
     if [ $with_color = 1 ]; then
       echo -ne '\x1B[1;32m'
@@ -39,5 +49,14 @@ for file in $(/bin/ls -p $dir | grep -v /); do
   	echo $file':'
     echo -ne '\x1B[0m'
   fi
-  cat $dir/$file; echo -e 
+
+  if [ $preview_whole = 0 ]; then
+    awk 'NR>10{exit} {print $0}' $dir/$file 
+  else
+    cat "$dir"/"$file"
+  fi
+  if [[ $trunc > 0 ]]; then
+    echo -e "[Truncated \x1b[1;33m"$trunc"\x1b[0m lines]"
+  fi
+  echo -e
 done
